@@ -1,0 +1,82 @@
+version: "3.8"
+services:
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:latest
+    networks:
+      - broker-network
+    ports:
+      - target: 8883
+        published: 8883
+        protocol: tcp
+        mode: bridge
+    volumes:
+      - type: bind
+        source: ./volumes/mosquitto/config/
+        target: /mosquitto/config
+        read_only: true
+      - type: bind
+        source: ./volumes/mosquitto/data
+        target: /mosquitto/data
+      - type: bind
+        source: ./volumes/mosquitto/log/
+        target: /mosquitto/log
+  redis:
+    container_name: redis
+    image: redis:alpine
+    networks:
+      - redis-network
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+        mode: bridge
+    volumes:
+       - type: bind
+         source: ./volumes/redis/config
+         target: /usr/local/etc/redis
+       - type: bind
+         source: ./volumes/redis/data
+         target: /data
+       - type: bind
+         source: ./volumes/redis/config/redis.conf
+         target: /usr/local/etc/redis/redis.conf
+
+
+  publisher:
+    container_name: publisher
+    build: publisher/.
+    networks:
+      - broker-network
+    depends_on:
+      - mosquitto
+  subscriber:
+    container_name: subscriber
+    build: subscriber/.
+    networks:
+      - broker-network
+    depends_on:
+      - mosquitto
+    volumes:
+      - type: bind
+        source: ./volumes/subscriber
+        target: /data
+        read_only: false
+  detect-vpn:
+    container_name: detect-vpn
+    build: detect-vpn/.
+    networks:
+      - broker-network
+    depends_on:
+      - mosquitto
+      - redis
+    volumes:
+      - type: bind
+        source: ./volumes/subscriber
+        target: /data
+        read_only: false
+networks:
+  broker-network:
+    external: false
+  redis-network:
+    external: false

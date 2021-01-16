@@ -1,0 +1,19 @@
+FROM golang:alpine as build
+
+LABEL maintainer "github.com/jxsl13"
+
+WORKDIR /build
+COPY *.go ./
+COPY go.* ./
+
+ENV CGO_ENABLED=0
+ENV GOOS=linux 
+
+RUN go get -d && go build -a -ldflags '-w -extldflags "-static"' -o subscriber .
+
+
+FROM alpine:latest as minimal
+WORKDIR /app
+COPY --from=build /build/subscriber .
+VOLUME ["/data"]
+ENTRYPOINT ["/app/subscriber"]

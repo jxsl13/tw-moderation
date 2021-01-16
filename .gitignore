@@ -1,0 +1,4 @@
+**.DS_Store
+*/.env
+volumes/mosquitto/data/mosquitto.db
+volumes/mosquitto/log/mosquitto.log
