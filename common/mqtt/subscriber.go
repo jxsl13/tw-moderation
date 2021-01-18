@@ -1,23 +1,20 @@
 package mqtt
 
-// Connect to the broker, subscribe, and write messages received to a file
-
 import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-// handler is a simple struct that provides a function to be called when a message is received. The message is parsed
-// and the count followed by the raw message is written to the file (this makes it easier to sort the file)
-type handler struct {
-	f *os.File
-}
-
+// Subscriber wraps the mqtt client that is subscribed to a specific topic
+// in a pretty simple to use manner.
+// initially you connect to your broker and fetch reveived messages with the method
+// Next(). Next() is a blocking call that waits for a channel to contain a message or
+// until the Close() method has been called that cancels an internally wrapped context, which
+// immediatly terminates
 type Subscriber struct {
 	address    string
 	clientID   string
@@ -35,6 +32,8 @@ func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 	}
 }
 
+// Close waits a second and then closes the client connection as well as the subsciber
+// and all internally used channels
 func (s *Subscriber) Close() {
 	s.client.Disconnect(1000)
 	close(s.msgChannel)
@@ -105,7 +104,7 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 				// close subscriber
 				subscriber.cancel()
 			} else {
-				fmt.Println("clientID: %s subscribed to: %s", clientID, topic)
+				fmt.Printf("clientID: %s subscribed to: %s\n", clientID, topic)
 			}
 		}()
 	}
