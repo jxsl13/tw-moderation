@@ -1,4 +1,4 @@
-module github.com/jxsl13/tw-moderation
+module github.com/jxsl13/tw-moderation/
 
 go 1.15
 
