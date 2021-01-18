@@ -14,13 +14,14 @@ import (
 
 var (
 	topic         = "topic1"
-	serverAddress = "tcp://mosquitto:1883"
-	clientID      = "detect-vpn"
+	serverAddress = ""
+	clientID      = ""
 )
 
 func init() {
 	serverAddress = os.Getenv("BROKER_ADDRESS")
 	clientID = os.Getenv("CLIENT_ID")
+	log.Println("Initialized with address: ", serverAddress, " clientID: ", clientID)
 }
 
 func main() {
