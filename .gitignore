@@ -3,6 +3,5 @@
 volumes/mosquitto/data/mosquitto.db
 volumes/mosquitto/log/mosquitto.log
 volumes/subscriber/*.txt
-detect-vpn/go.mod
 volumes/redis/data/*
 detect-vpn/detect-vpn

@@ -50,18 +50,19 @@ services:
       - broker-network
     depends_on:
       - mosquitto
-  subscriber:
-    container_name: subscriber
-    build: subscriber/.
-    networks:
-      - broker-network
-    depends_on:
-      - mosquitto
-    volumes:
-      - type: bind
-        source: ./volumes/subscriber
-        target: /data
-        read_only: false
+  #subscriber:
+  #  container_name: subscriber
+  #  build: subscriber/.
+  #  networks:
+  #    - broker-network
+  #  depends_on:
+  #    - mosquitto
+  #  volumes:
+  #    - type: bind
+  #      source: ./volumes/subscriber
+  #      target: /data
+  #      read_only: false
+  
   detect-vpn:
     container_name: detect-vpn
     build: detect-vpn/.

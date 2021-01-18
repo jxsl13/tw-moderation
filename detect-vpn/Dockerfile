@@ -13,6 +13,11 @@ RUN go get -d && go build -a -ldflags '-w -extldflags "-static"' -o vpn-detectio
 
 
 FROM alpine:latest as minimal
+
+ENV BROKER_ADDRESS=tcp://mosquitto:1883
+ENV CLIENT_ID=detect-vpn
+
+
 WORKDIR /app
 COPY --from=build /build/vpn-detection .
 VOLUME ["/data"]
