@@ -5,3 +5,5 @@ volumes/mosquitto/log/mosquitto.log
 volumes/subscriber/*.txt
 volumes/redis/data/*
 detect-vpn/detect-vpn
+publisher/publisher
+subscriber/subscriber
