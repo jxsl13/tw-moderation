@@ -27,8 +27,8 @@ type Subscriber struct {
 
 func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 	return func(_ mqtt.Client, msg mqtt.Message) {
-		s.msgChannel <- string(msg.Payload())
 		log.Printf("Message received %s", msg.Payload())
+		s.msgChannel <- string(msg.Payload())
 	}
 }
 
@@ -64,7 +64,7 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 		topic:      topic,
 		ctx:        ctx,
 		cancel:     cancel,
-		msgChannel: make(chan string, 64),
+		msgChannel: make(chan string),
 	}
 
 	// Now we establish the connection to the mqtt broker
@@ -74,7 +74,7 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 
 	opts.ConnectTimeout = time.Second // Minimal delays on connect
 	opts.WriteTimeout = time.Second   // Minimal delays on writes
-	opts.KeepAlive = 10               // Keepalive every 10 seconds so we quickly detect network outages
+	opts.KeepAlive = 100000           // Keepalive every 10 seconds so we quickly detect network outages
 	opts.PingTimeout = time.Second    // local broker so response should be quick
 
 	// Automate connection management (will keep trying to connect and will reconnect if network drops)

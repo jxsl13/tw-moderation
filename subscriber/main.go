@@ -16,7 +16,7 @@ import (
 const (
 	TOPIC         = "topic1"
 	QOS           = 1
-	SERVERADDRESS = "tcp://mosquitto:1883"
+	SERVERADDRESS = "tcp://localhost:1883"
 	CLIENTID      = "mqtt_subscriber"
 
 	WRITETOLOG  = true  // If true then received messages will be written to the console

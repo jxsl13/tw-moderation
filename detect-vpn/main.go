@@ -14,13 +14,13 @@ import (
 
 var (
 	topic         = "topic1"
-	serverAddress = ""
-	clientID      = ""
+	serverAddress = "tcp://localhost:1883"
+	clientID      = "detect_vpn"
 )
 
 func init() {
-	serverAddress = os.Getenv("BROKER_ADDRESS")
-	clientID = os.Getenv("CLIENT_ID")
+	//serverAddress = os.Getenv("BROKER_ADDRESS")
+	//clientID = os.Getenv("CLIENT_ID")
 	log.Println("Initialized with address: ", serverAddress, " clientID: ", clientID)
 }
 
@@ -33,7 +33,7 @@ func main() {
 	defer subscriber.Close()
 	go func() {
 		for msg, ok := subscriber.Next(); ok; {
-			log.Println("MSG: ", msg)
+			log.Println("MSG: ", msg, "OK: ", ok)
 		}
 	}()
 

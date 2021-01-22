@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -18,16 +19,16 @@ const (
 	TOPIC         = "topic1"
 	QOS           = 1
 	SERVERADDRESS = "tcp://mosquitto:1883"
-	DELAY         = time.Second
 	CLIENTID      = "mqtt_publisher"
 )
 
 func main() {
 	// Enable logging by uncommenting the below
-	// mqtt.ERROR = log.New(os.Stdout, "[ERROR] ", 0)
-	// mqtt.CRITICAL = log.New(os.Stdout, "[CRITICAL] ", 0)
-	// mqtt.WARN = log.New(os.Stdout, "[WARN]  ", 0)
-	// mqtt.DEBUG = log.New(os.Stdout, "[DEBUG] ", 0)
+	mqtt.ERROR = log.New(os.Stdout, "[ERROR] ", 0)
+	mqtt.CRITICAL = log.New(os.Stdout, "[CRITICAL] ", 0)
+	mqtt.WARN = log.New(os.Stdout, "[WARN]  ", 0)
+	mqtt.DEBUG = log.New(os.Stdout, "[DEBUG] ", 0)
+
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(SERVERADDRESS)
 	opts.SetClientID(CLIENTID)
@@ -78,7 +79,8 @@ func main() {
 		var count uint64
 		for {
 			select {
-			case <-time.After(DELAY):
+			case <-time.After(time.Second):
+				log.Printf("Timestamp: %s", time.Now())
 				count++
 				msg, err := json.Marshal(msg{Count: count})
 				if err != nil {

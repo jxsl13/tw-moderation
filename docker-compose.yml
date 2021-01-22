@@ -6,8 +6,8 @@ services:
     networks:
       - broker-network
     ports:
-      - target: 8883
-        published: 8883
+      - target: 1883
+        published: 1883
         protocol: tcp
         mode: bridge
     volumes:
@@ -63,19 +63,19 @@ services:
   #      target: /data
   #      read_only: false
   
-  detect-vpn:
-    container_name: detect-vpn
-    build: detect-vpn/.
-    networks:
-      - broker-network
-    depends_on:
-      - mosquitto
-      - redis
-    volumes:
-      - type: bind
-        source: ./volumes/subscriber
-        target: /data
-        read_only: false
+#  detect-vpn:
+#    container_name: detect-vpn
+#    build: detect-vpn/.
+#    networks:
+#      - broker-network
+#    depends_on:
+#      - mosquitto
+#      - redis
+#    volumes:
+#      - type: bind
+#        source: ./volumes/subscriber
+#        target: /data
+#        read_only: false
 networks:
   broker-network:
     external: false

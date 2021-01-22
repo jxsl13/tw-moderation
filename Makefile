@@ -10,7 +10,10 @@ build:
 
 debug: start
 	sleep 5
-	docker logs subscriber
+	docker logs detect-vpn
+
+logs:
+	docker logs detect-vpn
 
 clean:
 	docker system prune -f
