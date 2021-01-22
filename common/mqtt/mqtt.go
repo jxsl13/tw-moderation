@@ -13,15 +13,19 @@ const (
 )
 
 var (
-	DefaultPublishHandler = func(_ mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("UNEXPECTED MESSAGE: %s\n", msg)
+	Debug = false
+)
+
+var (
+	DefaultPublishHandler = func(client mqtt.Client, msg mqtt.Message) {
+		fmt.Printf("unexpected message: %s\n", msg)
 	}
 
-	DefaultOnConnectionLostHandler = func(cl mqtt.Client, err error) {
+	DefaultOnConnectionLostHandler = func(client mqtt.Client, err error) {
 		fmt.Println("connection lost")
 	}
 
-	DefaultOnReconnectingHandler = func(mqtt.Client, *mqtt.ClientOptions) {
+	DefaultOnReconnectingHandler = func(client mqtt.Client, option *mqtt.ClientOptions) {
 		fmt.Println("attempting to reconnect")
 	}
 )

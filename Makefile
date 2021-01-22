@@ -19,4 +19,3 @@ clean:
 	docker system prune -f
 	-rm -f detect-vpn/detect-vpn
 	-rm -f publisher/publisher
-	-rm -f subscriber/subscriber

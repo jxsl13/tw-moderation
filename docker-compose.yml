@@ -21,6 +21,7 @@ services:
       - type: bind
         source: ./volumes/mosquitto/log/
         target: /mosquitto/log
+
   redis:
     container_name: redis
     image: redis:alpine
@@ -32,16 +33,15 @@ services:
         protocol: tcp
         mode: bridge
     volumes:
-       - type: bind
-         source: ./volumes/redis/config
-         target: /usr/local/etc/redis
-       - type: bind
-         source: ./volumes/redis/data
-         target: /data
-       - type: bind
-         source: ./volumes/redis/config/redis.conf
-         target: /usr/local/etc/redis/redis.conf
-
+      - type: bind
+        source: ./volumes/redis/config
+        target: /usr/local/etc/redis
+      - type: bind
+        source: ./volumes/redis/data
+        target: /data
+      - type: bind
+        source: ./volumes/redis/config/redis.conf
+        target: /usr/local/etc/redis/redis.conf
 
   publisher:
     container_name: publisher
@@ -50,32 +50,29 @@ services:
       - broker-network
     depends_on:
       - mosquitto
-  #subscriber:
-  #  container_name: subscriber
-  #  build: subscriber/.
-  #  networks:
-  #    - broker-network
-  #  depends_on:
-  #    - mosquitto
-  #  volumes:
-  #    - type: bind
-  #      source: ./volumes/subscriber
-  #      target: /data
-  #      read_only: false
-  
-#  detect-vpn:
-#    container_name: detect-vpn
-#    build: detect-vpn/.
-#    networks:
-#      - broker-network
-#    depends_on:
-#      - mosquitto
-#      - redis
-#    volumes:
-#      - type: bind
-#        source: ./volumes/subscriber
-#        target: /data
-#        read_only: false
+    environment:
+      BROKER_ADDRESS: tcp://mosquitto:1883
+      BROKER_CLIENT_ID: publisher
+      BROKER_TOPIC: topic_01
+
+  detect-vpn:
+    container_name: detect-vpn
+    build: detect-vpn/.
+    networks:
+      - broker-network
+    depends_on:
+      - mosquitto
+      - redis
+    volumes:
+      - type: bind
+        source: ./volumes/subscriber
+        target: /data
+        read_only: false
+    environment:
+      BROKER_ADDRESS: tcp://mosquitto:1883
+      BROKER_CLIENT_ID: detect-vpn
+      BROKER_TOPIC: topic_01
+
 networks:
   broker-network:
     external: false

@@ -9,18 +9,27 @@ import (
 	"os/signal"
 	"syscall"
 
-	mqtt "github.com/jxsl13/tw-moderation/common/mqtt"
+	"github.com/jxsl13/tw-moderation/common/mqtt"
 )
 
 var (
 	topic         = "topic1"
 	serverAddress = "tcp://localhost:1883"
-	clientID      = "detect_vpn"
+	clientID      = "detect-vpn"
 )
 
 func init() {
-	//serverAddress = os.Getenv("BROKER_ADDRESS")
-	//clientID = os.Getenv("CLIENT_ID")
+	if brokerAddress := os.Getenv("BROKER_ADDRESS"); brokerAddress != "" {
+		serverAddress = brokerAddress
+	}
+	if id := os.Getenv("BROKER_CLIENT_ID"); id != "" {
+		clientID = id
+	}
+
+	if t := os.Getenv("BROKER_TOPIC"); t != "" {
+		topic = t
+	}
+
 	log.Println("Initialized with address: ", serverAddress, " clientID: ", clientID)
 }
 
@@ -32,8 +41,8 @@ func main() {
 	}
 	defer subscriber.Close()
 	go func() {
-		for msg, ok := subscriber.Next(); ok; {
-			log.Println("MSG: ", msg, "OK: ", ok)
+		for msg := range subscriber.Next() {
+			log.Println("MSG: ", msg)
 		}
 	}()
 

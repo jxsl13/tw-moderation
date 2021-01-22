@@ -1,116 +1,66 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"sync"
+	"strconv"
 	"syscall"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/jxsl13/tw-moderation/common/mqtt"
 )
 
 // Connect to the broker and publish a message periodically
 
-const (
-	TOPIC         = "topic1"
-	QOS           = 1
-	SERVERADDRESS = "tcp://mosquitto:1883"
-	CLIENTID      = "mqtt_publisher"
+var (
+	topic         = "topic1"
+	serverAddress = "tcp://mosquitto:1883"
+	clientID      = "publisher"
 )
 
+func init() {
+	if brokerAddress := os.Getenv("BROKER_ADDRESS"); brokerAddress != "" {
+		serverAddress = brokerAddress
+	}
+	if id := os.Getenv("BROKER_CLIENT_ID"); id != "" {
+		clientID = id
+	}
+	if t := os.Getenv("BROKER_TOPIC"); t != "" {
+		topic = t
+	}
+
+	log.Println("Initialized with address: ", serverAddress, " clientID: ", clientID)
+}
+
 func main() {
-	// Enable logging by uncommenting the below
-	mqtt.ERROR = log.New(os.Stdout, "[ERROR] ", 0)
-	mqtt.CRITICAL = log.New(os.Stdout, "[CRITICAL] ", 0)
-	mqtt.WARN = log.New(os.Stdout, "[WARN]  ", 0)
-	mqtt.DEBUG = log.New(os.Stdout, "[DEBUG] ", 0)
+	// Messages will be delivered asynchronously so we just need to wait for a signal to shutdown
+	sig := make(chan os.Signal, 1)
 
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker(SERVERADDRESS)
-	opts.SetClientID(CLIENTID)
-
-	opts.ConnectTimeout = time.Second // Minimal delays on connect
-	opts.WriteTimeout = time.Second   // Minimal delays on writes
-	opts.KeepAlive = 10               // Keepalive every 10 seconds so we quickly detect network outages
-	opts.PingTimeout = time.Second    // local broker so response should be quick
-
-	// Automate connection management (will keep trying to connect and will reconnect if network drops)
-	opts.ConnectRetry = true
-	opts.AutoReconnect = true
-
-	// Log events
-	opts.OnConnectionLost = func(cl mqtt.Client, err error) {
-		fmt.Println("connection lost")
+	publisher, err := mqtt.NewPublisher(serverAddress, clientID, topic)
+	if err != nil {
+		log.Println("Could not create Publisher:", err)
 	}
-	opts.OnConnect = func(mqtt.Client) {
-		fmt.Println("connection established")
-	}
-	opts.OnReconnecting = func(mqtt.Client, *mqtt.ClientOptions) {
-		fmt.Println("attempting to reconnect")
-	}
+	defer publisher.Close()
 
-	//
-	// Connect to the broker
-	//
-	client := mqtt.NewClient(opts)
-
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-	fmt.Println("Connection is up")
-
-	//
-	// Publish messages until we receive a signal
-	//
-	done := make(chan struct{})
-	var wg sync.WaitGroup
-
-	// The message could be anything; lets make it JSON containing a simple count (makes it simpler to track the messages)
-	type msg struct {
-		Count uint64
-	}
-
-	wg.Add(1)
 	go func() {
-		var count uint64
+		cnt := 0
 		for {
 			select {
 			case <-time.After(time.Second):
-				log.Printf("Timestamp: %s", time.Now())
-				count++
-				msg, err := json.Marshal(msg{Count: count})
-				if err != nil {
-					panic(err)
-				}
-
-				t := client.Publish(TOPIC, QOS, false, msg)
-				// Handle the token in a go routine so this loop keeps sending messages regardless of delivery status
-				go func() {
-					_ = t.Wait() // Can also use '<-t.Done()' in releases > 1.2.0
-					if t.Error() != nil {
-						fmt.Printf("ERROR PUBLISHING: %s\n", err)
-					}
-				}()
-			case <-done:
-				fmt.Println("publisher done")
-				wg.Done()
+				cnt++
+				publisher.Publish(strconv.Itoa(cnt))
+				log.Println("Published message:", cnt)
+			case <-sig:
 				return
 			}
 		}
 	}()
 
-	// Wait for a signal before exiting
-	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
-
+	fmt.Println("Connection is up, press Ctrl-C to shutdown")
 	<-sig
 	fmt.Println("signal caught - exiting")
-
-	close(done)
-	wg.Wait()
 	fmt.Println("shutdown complete")
 }
