@@ -24,4 +24,11 @@ test:
 	docker-compose up -d mosquitto
 	go test -timeout 2m -run ^Test*$ github.com/jxsl13/tw-moderation/common/mqtt
 
+update:
+	go get -u "github.com/jxsl13/tw-moderation/common/"  
+	go get -u "github.com/jxsl13/tw-moderation/common/events"
+	go get -u "github.com/jxsl13/tw-moderation/common/mqtt"
+	go get -u "github.com/jxsl13/tw-moderation/common/acl"
+	 
+
 

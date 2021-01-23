@@ -8,3 +8,12 @@ Such a data collector must publish to the event specific topic.
 
 The second task that the service performs is to subscribe to a topic that uniquely identifies tha server that the service is connected to.
 This topic in the message broker has the purpose to feed commands into the specific Teeworlds server to beexecuted.
+
+
+## Development
+
+Updating dependencies:
+
+```shell
+go get -d "github.com/jxsl13/tw-moderation"
+```
