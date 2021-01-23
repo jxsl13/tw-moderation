@@ -3,8 +3,7 @@ FROM golang:alpine as build
 LABEL maintainer "github.com/jxsl13"
 
 WORKDIR /build
-COPY *.go ./
-COPY go.* ./
+COPY * ./
 
 ENV CGO_ENABLED=0
 ENV GOOS=linux 
