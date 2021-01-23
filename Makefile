@@ -19,3 +19,9 @@ clean:
 	docker system prune -f
 	-rm -f detect-vpn/detect-vpn
 	-rm -f publisher/publisher
+
+test:
+	docker-compose up -d mosquitto
+	go test -timeout 2m -run ^Test*$ github.com/jxsl13/tw-moderation/common/mqtt
+
+
