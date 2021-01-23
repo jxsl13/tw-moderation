@@ -56,7 +56,7 @@ func NewPublisherSubscriber(address, clientID, publishTopic, subscribeTopic stri
 			if t := publisher.client.Publish(publishTopic, 1, false, msg); t.Wait() && t.Error() != nil {
 				log.Println("Publisher could not send message to", publisher.address, "on topic", publisher.topic)
 			} else {
-				log.Println("Published message at broker:", msg)
+				log.Println("Published message:", msg)
 			}
 		}
 	}()

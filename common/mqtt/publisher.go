@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -19,22 +20,30 @@ type Publisher struct {
 	topic      string
 	client     mqtt.Client
 	msgChannel chan string
+	once       sync.Once
+	isClosed   bool
 }
 
 // Close waits a second and then closes the client connection as well as the subsciber
 // and all internally used channels
 func (p *Publisher) Close() {
-
-	if p.client.IsConnected() {
-		p.client.Disconnect(1000)
-	}
-	close(p.msgChannel)
-	log.Println("Closed Publisher with address:", p.address, "and topic:", p.topic, "with ID: ", p.clientID)
+	p.once.Do(func() {
+		if p.client != nil && p.client.IsConnected() {
+			p.client.Disconnect(1000)
+		}
+		close(p.msgChannel)
+		p.isClosed = true
+		log.Println("Closed Publisher with address:", p.address, "and topic:", p.topic, "with ID: ", p.clientID)
+	})
 }
 
 // Publish pushes the message into a channel which is emptied by a concurrent goroutine
 // and published to th ebroker at the specified topic.
 func (p *Publisher) Publish(msg string) {
+	if p.isClosed {
+		log.Println("Publish skipped, channel closed:", msg)
+		return
+	}
 	p.msgChannel <- msg
 	log.Println("Publisher pushed message into channel:", msg)
 }

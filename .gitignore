@@ -7,3 +7,4 @@ volumes/redis/data/*
 detect-vpn/detect-vpn
 publisher/publisher
 subscriber/subscriber
+pubsub/pubsub

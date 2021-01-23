@@ -17,7 +17,7 @@ import (
 var (
 	topic         = "topic1"
 	serverAddress = "tcp://localhost:1883"
-	clientID      = "publisher"
+	clientID      = "pubsub"
 )
 
 func init() {
@@ -39,7 +39,7 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	publisher, subscriber, err := mqtt.NewPublisherSubscriber(serverAddress, clientID, "PUBSUB", "PUBSUB")
 	if err != nil {
-		log.Fatalln("Could not create Publisher:", err)
+		log.Fatalln("Could not create PubSub:", err)
 	}
 	defer publisher.Close()
 	defer subscriber.Close()

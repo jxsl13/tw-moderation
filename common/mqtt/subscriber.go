@@ -3,6 +3,7 @@ package mqtt
 import (
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -24,6 +25,7 @@ type Subscriber struct {
 	topic      string
 	client     mqtt.Client
 	msgChannel chan string
+	once       sync.Once
 }
 
 func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
@@ -38,12 +40,16 @@ func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 // Close waits a second and then closes the client connection as well as the subsciber
 // and all internally used channels
 func (s *Subscriber) Close() {
-
-	if s.client.IsConnected() {
-		s.client.Disconnect(1000)
-	}
-	close(s.msgChannel)
-	log.Println("Closed subscriber with address: ", s.address, " and topic: ", s.topic, " with ID: ", s.clientID)
+	s.once.Do(func() {
+		if s.client != nil && s.client.IsConnected() {
+			if token := s.client.Unsubscribe(s.topic); token.WaitTimeout(time.Second) && token.Error() != nil {
+				log.Println("Failed to unsubscribe from", s.address, "with topic:", s.topic)
+			}
+			s.client.Disconnect(1000)
+		}
+		close(s.msgChannel)
+		log.Println("Closed subscriber with address: ", s.address, " and topic: ", s.topic, " with ID: ", s.clientID)
+	})
 }
 
 // Next blocks until the next message from the broker is received
