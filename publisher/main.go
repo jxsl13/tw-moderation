@@ -16,7 +16,7 @@ import (
 
 var (
 	topic         = "topic1"
-	serverAddress = "tcp://mosquitto:1883"
+	serverAddress = "tcp://localhost:1883"
 	clientID      = "publisher"
 )
 
@@ -37,10 +37,9 @@ func init() {
 func main() {
 	// Messages will be delivered asynchronously so we just need to wait for a signal to shutdown
 	sig := make(chan os.Signal, 1)
-
 	publisher, err := mqtt.NewPublisher(serverAddress, clientID, topic)
 	if err != nil {
-		log.Println("Could not create Publisher:", err)
+		log.Fatalln("Could not create Publisher:", err)
 	}
 	defer publisher.Close()
 
