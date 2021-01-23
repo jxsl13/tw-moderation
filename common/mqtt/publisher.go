@@ -24,7 +24,10 @@ type Publisher struct {
 // Close waits a second and then closes the client connection as well as the subsciber
 // and all internally used channels
 func (p *Publisher) Close() {
-	p.client.Disconnect(1000)
+
+	if p.client.IsConnected() {
+		p.client.Disconnect(1000)
+	}
 	close(p.msgChannel)
 	log.Println("Closed Publisher with address:", p.address, "and topic:", p.topic, "with ID: ", p.clientID)
 }

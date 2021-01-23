@@ -38,10 +38,10 @@ func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 // Close waits a second and then closes the client connection as well as the subsciber
 // and all internally used channels
 func (s *Subscriber) Close() {
-	if token := s.client.Unsubscribe(s.topic); token.Wait() && token.Error() != nil {
-		log.Println("Unsubscribing from topic: ", s.topic, " failed: ", token.Error())
+
+	if s.client.IsConnected() {
+		s.client.Disconnect(1000)
 	}
-	s.client.Disconnect(1000)
 	close(s.msgChannel)
 	log.Println("Closed subscriber with address: ", s.address, " and topic: ", s.topic, " with ID: ", s.clientID)
 }
