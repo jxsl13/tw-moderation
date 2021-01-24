@@ -3,6 +3,7 @@ package mqtt
 import (
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,18 +23,19 @@ var (
 type Subscriber struct {
 	address    string
 	clientID   string
-	topic      string
+	topics     []string
 	client     mqtt.Client
-	msgChannel chan string
+	msgChannel chan Message
 	once       sync.Once
 }
 
 func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 	return func(_ mqtt.Client, msg mqtt.Message) {
-		s.msgChannel <- string(msg.Payload())
-		if Debug {
-			log.Println("Subscriber pushed message into channel")
+		s.msgChannel <- Message{
+			Topic:    msg.Topic(),
+			Playload: string(msg.Payload()),
 		}
+		log.Println("Subscriber pushed message into channel")
 	}
 }
 
@@ -42,27 +44,29 @@ func (s *Subscriber) getForwardHandler() func(mqtt.Client, mqtt.Message) {
 func (s *Subscriber) Close() {
 	s.once.Do(func() {
 		if s.client != nil && s.client.IsConnected() {
-			if token := s.client.Unsubscribe(s.topic); token.WaitTimeout(time.Second) && token.Error() != nil {
-				log.Println("Failed to unsubscribe from", s.address, "with topic:", s.topic)
+			for _, topic := range s.topics {
+				if token := s.client.Unsubscribe(topic); token.WaitTimeout(time.Second) && token.Error() != nil {
+					log.Println("Failed to unsubscribe from", s.address, "with topic:", topic)
+				}
 			}
 			s.client.Disconnect(1000)
 		}
 		close(s.msgChannel)
-		log.Println("Closed subscriber with address: ", s.address, " and topic: ", s.topic, " with ID: ", s.clientID)
+		log.Println("Closed subscriber with address: ", s.address, " and topics: ", strings.Join(s.topics, ","), " with ID: ", s.clientID)
 	})
 }
 
 // Next blocks until the next message from the broker is received
 // the bool indicates that the subscriber was closed
 // you can use this in a for loop until ok is false, preferrably in an own goroutine
-func (s *Subscriber) Next() <-chan string {
+func (s *Subscriber) Next() <-chan Message {
 	return s.msgChannel
 }
 
 // NewSubscriber creates and starts a new subscriber that receives new messages via
 // a string channel that can be
 // address has the format: tcp://localhost:1883
-func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
+func NewSubscriber(address, clientID string, topics ...string) (*Subscriber, error) {
 	if debug {
 		mqtt.ERROR = log.New(os.Stdout, "[ERROR] ", 0)
 		mqtt.CRITICAL = log.New(os.Stdout, "[CRITICAL] ", 0)
@@ -72,9 +76,9 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 	subscriber := &Subscriber{
 		address:    address,
 		clientID:   clientID,
-		topic:      topic,
+		topics:     topics,
 		client:     nil,
-		msgChannel: make(chan string, 1024),
+		msgChannel: make(chan Message, 64),
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -86,13 +90,13 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 	opts.SetCleanSession(true)
 
 	opts.OnConnect = func(_ mqtt.Client) {
-		log.Println("Subscriber connected to ", address, " and topic: ", topic, " with ID: ", clientID)
+		log.Println("Subscriber connected to", address, "and topics:", strings.Join(topics, ","), "with ID:", clientID)
 	}
 	opts.OnConnectionLost = func(_ mqtt.Client, err error) {
-		log.Println("Subscriber lost connection of ", address, " with topic: ", topic, " and ID: ", clientID, " error: ", err)
+		log.Println("Subscriber lost connection of", address, "with topics:", strings.Join(topics, ","), "and ID:", clientID, " error: ", err)
 	}
 	opts.OnReconnecting = func(client mqtt.Client, options *mqtt.ClientOptions) {
-		log.Println("Subscriber reconnected to ", address, " with topic: ", topic, " and ID: ", clientID)
+		log.Println("Subscriber reconnected to", address, "with topics:", strings.Join(topics, ","), "and ID:", clientID)
 	}
 
 	c := mqtt.NewClient(opts)
@@ -102,9 +106,22 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 		return nil, token.Error()
 	}
 
-	if token := c.Subscribe(topic, 1, subscriber.getForwardHandler()); token.Wait() && token.Error() != nil {
+	successfulSubscriptions := make([]string, 0, len(topics))
+	var err error = nil
+	for _, topic := range topics {
+		if token := c.Subscribe(topic, 1, subscriber.getForwardHandler()); token.Wait() && token.Error() != nil {
+			err = token.Error()
+			break
+		} else {
+			successfulSubscriptions = append(successfulSubscriptions, topic)
+		}
+	}
+
+	if err != nil {
+		// needed in order to properly close the connection and unsubscribe from all topics
+		subscriber.topics = successfulSubscriptions
 		subscriber.Close()
-		return nil, token.Error()
+		return nil, err
 	}
 
 	return subscriber, nil
