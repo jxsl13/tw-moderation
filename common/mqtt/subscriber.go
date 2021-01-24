@@ -10,10 +10,6 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-var (
-	debug = false
-)
-
 // Subscriber wraps the mqtt client that is subscribed to a specific topic
 // in a pretty simple to use manner.
 // initially you connect to your broker and fetch reveived messages with the method
@@ -67,7 +63,7 @@ func (s *Subscriber) Next() <-chan Message {
 // a string channel that can be
 // address has the format: tcp://localhost:1883
 func NewSubscriber(address, clientID string, topics ...string) (*Subscriber, error) {
-	if debug {
+	if Debug {
 		mqtt.ERROR = log.New(os.Stdout, "[ERROR] ", 0)
 		mqtt.CRITICAL = log.New(os.Stdout, "[CRITICAL] ", 0)
 		mqtt.WARN = log.New(os.Stdout, "[WARN]  ", 0)
