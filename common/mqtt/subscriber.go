@@ -83,6 +83,8 @@ func NewSubscriber(address, clientID, topic string) (*Subscriber, error) {
 	opts.SetKeepAlive(10 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 	opts.SetAutoReconnect(true)
+	opts.SetCleanSession(true)
+
 	opts.OnConnect = func(_ mqtt.Client) {
 		log.Println("Subscriber connected to ", address, " and topic: ", topic, " with ID: ", clientID)
 	}

@@ -50,7 +50,6 @@ func main() {
 			case <-time.After(time.Second):
 				cnt++
 				publisher.Publish(strconv.Itoa(cnt))
-				log.Println("Published message:", cnt)
 			case <-sig:
 				return
 			}

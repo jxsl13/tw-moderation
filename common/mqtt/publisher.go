@@ -67,6 +67,7 @@ func NewPublisher(address, clientID, topic string) (*Publisher, error) {
 	opts.SetKeepAlive(10 * time.Second)
 	opts.SetPingTimeout(1 * time.Second)
 	opts.SetAutoReconnect(true)
+	opts.SetCleanSession(true)
 	opts.OnConnect = func(_ mqtt.Client) {
 		log.Println("Publisher connected to", address, "and topic:", topic, "with ID:", clientID)
 	}
