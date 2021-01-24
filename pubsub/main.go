@@ -39,11 +39,16 @@ func init() {
 func main() {
 	// Messages will be delivered asynchronously so we just need to wait for a signal to shutdown
 	sig := make(chan os.Signal, 1)
-	publisher, subscriber, err := mqtt.NewTestPublisherSubscriber(serverAddress, clientID, "PUBSUB", "PUBSUB")
+	publisher, err := mqtt.NewPublisher(serverAddress, "pubsub-publisher", "default")
 	if err != nil {
-		log.Fatalln("Could not create PubSub:", err)
+		log.Fatalln("Could not create Publisher:", err)
 	}
 	defer publisher.Close()
+
+	subscriber, err := mqtt.NewSubscriber(serverAddress, "pubsub-subscriber", "default", "different")
+	if err != nil {
+		log.Fatalln("Could not create Subscriber:", err)
+	}
 	defer subscriber.Close()
 
 	go func() {
@@ -51,8 +56,12 @@ func main() {
 		for {
 			select {
 			case <-time.After(time.Second):
+				if cnt % 2 == 0 {
+					publisher.Publish(fmt.Sprintf("%d default", cnt))
+				} else {
+					publisher.PublishTo("different", fmt.Sprintf("%d different", cnt))
+				}
 				cnt++
-				publisher.Publish(strconv.Itoa(cnt))
 			case <-sig:
 				return
 			}
@@ -62,10 +71,14 @@ func main() {
 	go func() {
 		log.Println("Started subscriber routine.")
 		for msg := range subscriber.Next() {
-			log.Println("Received message: ", msg)
+			switch msg.Topic {
+			case "different":
+				log.Println("Received message(" msg.Topic, "): ", msg.Payload.(string))
+			default:
+				log.Println("Received message(" msg.Topic, "): ", msg.Payload.(string))
+			}
 		}
 	}()
-
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	fmt.Println("Connection is up, press Ctrl-C to shutdown")
 	<-sig
