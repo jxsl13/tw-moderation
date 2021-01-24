@@ -52,6 +52,9 @@ func (p *Publisher) Publish(msg interface{}) {
 		log.Println("Publish skipped, channel closed:", msg)
 		return
 	}
+	if p.topic == "" {
+		log.Panicln("Trying to publish a message to an empty topic string.")
+	}
 
 	switch m := msg.(type) {
 	case Message:
@@ -75,6 +78,9 @@ func (p *Publisher) PublishTo(topic string, msg interface{}) {
 	if p.isClosed {
 		log.Println("Publish skipped, channel closed:", msg)
 		return
+	}
+	if topic == "" {
+		log.Panicln("Trying to publish a message to an empty topic string.")
 	}
 
 	switch m := msg.(type) {
@@ -133,10 +139,6 @@ func NewPublisher(address, clientID, topic string) (*Publisher, error) {
 	go func() {
 		for msg := range publisher.msgChannel {
 			topic := msg.Topic
-			// if messages with an empty default topic are sent, they are skipped
-			if topic == "" {
-				continue
-			}
 			payload := msg.Playload
 
 			if token := publisher.client.Publish(topic, 1, false, payload); token.Wait() && token.Error() != nil {
