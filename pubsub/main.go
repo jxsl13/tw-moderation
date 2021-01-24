@@ -32,12 +32,14 @@ func init() {
 	}
 
 	log.Println("Initialized with address: ", serverAddress, " clientID: ", clientID)
+
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 }
 
 func main() {
 	// Messages will be delivered asynchronously so we just need to wait for a signal to shutdown
 	sig := make(chan os.Signal, 1)
-	publisher, subscriber, err := mqtt.NewPublisherSubscriber(serverAddress, clientID, "PUBSUB", "PUBSUB")
+	publisher, subscriber, err := mqtt.NewTestPublisherSubscriber(serverAddress, clientID, "PUBSUB", "PUBSUB")
 	if err != nil {
 		log.Fatalln("Could not create PubSub:", err)
 	}
@@ -58,6 +60,7 @@ func main() {
 	}()
 
 	go func() {
+		log.Println("Started subscriber routine.")
 		for msg := range subscriber.Next() {
 			log.Println("Received message: ", msg)
 		}

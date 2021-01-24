@@ -19,7 +19,7 @@ type Publisher struct {
 	clientID   string
 	topic      string
 	client     mqtt.Client
-	msgChannel chan string
+	msgChannel chan Message
 	once       sync.Once
 	isClosed   bool
 }
@@ -39,12 +39,55 @@ func (p *Publisher) Close() {
 
 // Publish pushes the message into a channel which is emptied by a concurrent goroutine
 // and published to th ebroker at the specified topic.
-func (p *Publisher) Publish(msg string) {
+// use string, []byte, int, int64, float32, float64 or
+// Message{
+//	  Topic string,
+//    Payload inteface{}
+// }
+// allows you to control the taget topic
+// if you are using custom structs, please convert them into JSON before
+// passing them to this function
+func (p *Publisher) Publish(msg interface{}) {
 	if p.isClosed {
 		log.Println("Publish skipped, channel closed:", msg)
 		return
 	}
-	p.msgChannel <- msg
+
+	switch m := msg.(type) {
+	case Message:
+		// if it's a message, you can explicity control the topic
+		p.msgChannel <- m
+	case string, []byte, int, int64, float32, float64, bool:
+		// if it's not a message type, you can simply
+		// send it to the default topic
+		p.msgChannel <- Message{
+			Topic:    p.topic,
+			Playload: msg,
+		}
+	default:
+		log.Panicf("Invalid type: %T", msg)
+	}
+	log.Println("Publisher pushed message into channel:", msg)
+}
+
+// PublishTo allows to specify a different topic other than the default one.
+func (p *Publisher) PublishTo(topic string, msg interface{}) {
+	if p.isClosed {
+		log.Println("Publish skipped, channel closed:", msg)
+		return
+	}
+
+	switch m := msg.(type) {
+	case string, []byte, int, int64, float32, float64, bool:
+		// if it's not a message type, you can simply send it to the default
+		// topic
+		p.msgChannel <- Message{
+			Topic:    topic,
+			Playload: m,
+		}
+	default:
+		log.Panicf("Invalid type: %T", msg)
+	}
 	log.Println("Publisher pushed message into channel:", msg)
 }
 
@@ -55,10 +98,10 @@ func NewPublisher(address, clientID, topic string) (*Publisher, error) {
 
 	publisher := &Publisher{
 		address:    address,
-		clientID:   clientID,
+		clientID:   clientID + topic,
 		topic:      topic,
 		client:     nil,
-		msgChannel: make(chan string, 1024),
+		msgChannel: make(chan Message, 64),
 	}
 
 	opts := mqtt.NewClientOptions()
@@ -89,7 +132,14 @@ func NewPublisher(address, clientID, topic string) (*Publisher, error) {
 	// confirmation token.
 	go func() {
 		for msg := range publisher.msgChannel {
-			if token := publisher.client.Publish(topic, 1, false, msg); token.Wait() && token.Error() != nil {
+			topic := msg.Topic
+			// if messages with an empty default topic are sent, they are skipped
+			if topic == "" {
+				continue
+			}
+			payload := msg.Playload
+
+			if token := publisher.client.Publish(topic, 1, false, payload); token.Wait() && token.Error() != nil {
 				log.Println("Publisher could not send message to", publisher.address, "on topic", publisher.topic)
 			} else {
 				log.Println("Published message at broker:", msg)
