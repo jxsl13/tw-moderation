@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -56,7 +55,7 @@ func main() {
 		for {
 			select {
 			case <-time.After(time.Second):
-				if cnt % 2 == 0 {
+				if cnt%2 == 0 {
 					publisher.Publish(fmt.Sprintf("%d default", cnt))
 				} else {
 					publisher.PublishTo("different", fmt.Sprintf("%d different", cnt))
@@ -73,9 +72,9 @@ func main() {
 		for msg := range subscriber.Next() {
 			switch msg.Topic {
 			case "different":
-				log.Println("Received message(" msg.Topic, "): ", msg.Payload.(string))
+				log.Println("Received message(", msg.Topic, "): ", msg.Payload.(string))
 			default:
-				log.Println("Received message(" msg.Topic, "): ", msg.Payload.(string))
+				log.Println("Received message(", msg.Topic, "): ", msg.Payload.(string))
 			}
 		}
 	}()
